@@ -99,10 +99,39 @@ different costs to members (the listed costs are per half-hour 'slot'), and
 the guest user's ID is always 0. Include in your output the name of the
 facility, the name of the member formatted as a single column, and the cost.
 Order by descending cost, and do not use any subqueries. */
+SELECT 
+    f.name, 
+    CONCAT_WS(', ', m.surname, m.firstname) as fullname, 
+    CASE WHEN b.memid = 0 THEN guestcost * slots
+        ELSE membercost * slots END AS cost
+FROM Bookings as b
+LEFT JOIN Facilities as f
+    ON b.facid = f.facid
+LEFT JOIN Members as m
+    ON b.memid = m.memid
+WHERE DATE(b.starttime) = '2012-09-14'
+    AND ((membercost * slots > 30 AND m.memid != 0)
+    OR (guestcost * slots > 30 AND m.memid = 0))
+ORDER BY cost DESC;
 
 
 /* Q9: This time, produce the same result as in Q8, but using a subquery. */
-
+SELECT 
+    f.name, 
+    CONCAT_WS(', ', m.surname, m.firstname) as fullname, 
+    CASE WHEN b.memid = 0 THEN guestcost * slots
+        ELSE membercost * slots END AS cost
+FROM (
+    SELECT * 
+    FROM Bookings
+    WHERE DATE(starttime) = '2012-09-14') as b
+LEFT JOIN Facilities as f
+    ON b.facid = f.facid
+LEFT JOIN Members as m
+    ON b.memid = m.memid
+WHERE (membercost * slots > 30 AND m.memid != 0)
+    OR (guestcost * slots > 30 AND m.memid = 0)
+ORDER BY cost DESC;
 
 /* PART 2: SQLite
 
@@ -114,6 +143,22 @@ QUESTIONS:
 The output of facility name and total revenue, sorted by revenue. Remember
 that there's a different cost for guests and members! */
 
+from sqlalchemy import create_engine
+import pandas as pd
+
+engine = create_engine('sqlite:///sqlite_db_pythonsqlite.db')
+
+query = 'WITH fac_lookup AS (  \
+            SELECT facid, name \
+            FROM Facilities \
+            GROUP BY facid) \
+        SELECT fl.name as facility_name, SUM(f.guestcost * b.slots + f.membercost * b.slots) as revenue \
+        FROM Bookings as b \
+        LEFT JOIN Facilities as f ON f.facid = b.facid \
+        LEFT JOIN fac_lookup as fl ON b.facid = fl.facid \
+        GROUP BY b.facid'
+df = pd.read_sql_query(query, engine)
+df
 /* Q11: Produce a report of members and who recommended them in alphabetic surname,firstname order */
 
 
