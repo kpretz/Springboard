@@ -160,10 +160,49 @@ query = 'WITH fac_lookup AS (  \
 df = pd.read_sql_query(query, engine)
 df
 /* Q11: Produce a report of members and who recommended them in alphabetic surname,firstname order */
+from sqlalchemy import create_engine
+import pandas as pd
 
+query = 'SELECT \
+            m1.surname || ", " || m1.firstname as fullname, \
+            m2.surname || ", " || m2.firstname as recommended_name \
+        FROM Members as m1 \
+        LEFT JOIN Members as m2 \
+            ON m1.recommendedby = m2.memid \
+        ORDER BY fullname;'
+        
+df = pd.read_sql_query(query, engine)
+df
 
 /* Q12: Find the facilities with their usage by member, but not guests */
+from sqlalchemy import create_engine
+import pandas as pd
 
+query = 'SELECT \
+            f.name, \
+            COUNT(*) AS member_bookings \
+        FROM Bookings as b \
+        INNER JOIN Facilities as f \
+            ON f.facid = b.facid \
+        WHERE memid != 0 \
+        GROUP BY b.facid'
+        
+df = pd.read_sql_query(query, engine)
+df
 
 /* Q13: Find the facilities usage by month, but not guests */
+from sqlalchemy import create_engine
+import pandas as pd
 
+query = 'SELECT \
+            f.name, \
+            strftime("%m", starttime) as month, \
+            COUNT(*) AS member_bookings \
+        FROM Bookings as b \
+        INNER JOIN Facilities as f \
+            ON f.facid = b.facid \
+        WHERE memid != 0 \
+        GROUP BY b.facid, strftime("%m", starttime)'
+        
+df = pd.read_sql_query(query, engine)
+df
